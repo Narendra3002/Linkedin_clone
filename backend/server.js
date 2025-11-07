@@ -6,16 +6,17 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+import cors from "cors";
 
 // Middleware
 app.use(cors({
   origin: [
-    "http://localhost:3000", // for local dev
-    "https://linkedin-clone-avbt6nevr-narendrasai3002-3444s-projects.vercel.app" // your Vercel frontend URL
+    "https://linkedin-clone-drpujqbdp-narendrasai3002-3444s-projects.vercel.app",
+    "http://localhost:3000"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
+
 
 app.use(express.json());
 
