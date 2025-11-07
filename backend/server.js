@@ -6,8 +6,6 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-import cors from "cors";
-
 // Middleware
 app.use(cors({
   origin: [

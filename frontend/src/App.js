@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, LogOut, User, ThumbsUp, MessageCircle, Edit2, Trash2, Upload } from 'lucide-react';
 
-const API_URL = 'https://linkedin-clone-uh4b.onrender.com/api'; // Replace with your deployed backend URL
+const API_URL = 'https://linkedin-clone-uh4b.onrender.com/api';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');
@@ -34,8 +34,10 @@ function App() {
       setLoading(true);
       const response = await fetch(`${API_URL}/posts`, {
         headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user'))?.token}`
-        }
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${user?.token}`
+}
+
       });
       const data = await response.json();
       if (response.ok) {
