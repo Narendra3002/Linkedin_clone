@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, LogOut, User, ThumbsUp, MessageCircle, Edit2, Trash2, Upload } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api'; // Replace with your deployed backend URL
+const API_URL = 'https://linkedin-clone-uh4b.onrender.com/api'; // Replace with your deployed backend URL
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');

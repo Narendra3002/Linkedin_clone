@@ -8,7 +8,15 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:3000", // for local dev
+    "https://linkedin-clone-avbt6nevr-narendrasai3002-3444s-projects.vercel.app" // your Vercel frontend URL
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // MongoDB Connection
