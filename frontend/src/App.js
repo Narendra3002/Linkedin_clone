@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, LogOut, User, ThumbsUp, MessageCircle, Edit2, Trash2, Upload } from 'lucide-react';
+import { Home, LogOut, User, ThumbsUp, MessageCircle, Trash2 } from 'lucide-react';
 
 const API_URL = 'https://linkedin-clone-uh4b.onrender.com/api';
 
