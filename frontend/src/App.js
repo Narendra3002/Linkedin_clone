@@ -10,14 +10,12 @@ function App() {
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
 
   // For comments
   const [openCommentBox, setOpenCommentBox] = useState(null);
   const [commentInputs, setCommentInputs] = useState({});
 
-  // Load user on mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (storedUser) {
@@ -27,7 +25,6 @@ function App() {
     }
   }, []);
 
-  // Fetch posts
   const fetchPosts = async (currentUser = user) => {
     try {
       setLoading(true);
@@ -46,7 +43,6 @@ function App() {
     }
   };
 
-  // Signup
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
@@ -72,7 +68,6 @@ function App() {
     }
   };
 
-  // Login
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -98,7 +93,6 @@ function App() {
     }
   };
 
-  // Logout
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -106,7 +100,6 @@ function App() {
     setPosts([]);
   };
 
-  // Create Post
   const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!newPost.trim()) return;
@@ -132,7 +125,6 @@ function App() {
     }
   };
 
-  // Like Post
   const handleLike = async (postId) => {
     try {
       const response = await fetch(`${API_URL}/posts/${postId}/like`, {
@@ -150,7 +142,6 @@ function App() {
     }
   };
 
-  // Delete Post
   const handleDelete = async (postId) => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
     try {
@@ -173,7 +164,6 @@ function App() {
   const handleAddComment = async (postId) => {
     const text = commentInputs[postId]?.trim();
     if (!text) return;
-
     try {
       const response = await fetch(`${API_URL}/posts/${postId}/comment`, {
         method: 'POST',
@@ -185,6 +175,7 @@ function App() {
       });
       const data = await response.json();
       if (response.ok) {
+        // Update only the commented post
         setPosts(posts.map(post =>
           post._id === postId ? { ...post, comments: data.comments } : post
         ));
@@ -195,7 +186,6 @@ function App() {
     }
   };
 
-  // Time ago format
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     if (seconds < 60) return 'Just now';
@@ -205,7 +195,6 @@ function App() {
     return new Date(date).toLocaleDateString();
   };
 
-  // Auth Page
   const renderAuth = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
@@ -232,11 +221,7 @@ function App() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>}
 
         <form onSubmit={currentPage === 'login' ? handleLogin : handleSignup}>
           {currentPage === 'signup' && (
@@ -290,10 +275,8 @@ function App() {
     </div>
   );
 
-  // Feed Page
   const renderFeed = () => (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -310,10 +293,7 @@ function App() {
               </div>
               <span className="font-semibold text-gray-700 hidden sm:inline">{user?.name}</span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
-            >
+            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>
             </button>
@@ -322,7 +302,6 @@ function App() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Create Post */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <form onSubmit={handleCreatePost}>
             <textarea
@@ -344,7 +323,6 @@ function App() {
           </form>
         </div>
 
-        {/* Posts Feed */}
         <div className="space-y-4">
           {loading && posts.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-8 text-center">
@@ -377,13 +355,10 @@ function App() {
 
                 <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
 
-                {/* Like & Comment Buttons */}
                 <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
                   <button
                     onClick={() => handleLike(post._id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      post.likedBy?.includes(user?._id) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${post.likedBy?.includes(user?._id) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
                   >
                     <ThumbsUp className="w-4 h-4" />
                     <span className="text-sm font-semibold">{post.likes || 0} {post.likes === 1 ? 'Like' : 'Likes'}</span>
@@ -398,13 +373,11 @@ function App() {
                   </button>
                 </div>
 
-                {/* Comment Box */}
                 {openCommentBox === post._id && (
                   <div className="mt-3">
-                    {post.comments.map((c) => (
-                      <div key={c._id || c.createdAt} className="text-sm text-gray-700 mb-1">
-                        <span className="font-semibold">{c.user?.name}: </span>
-                        {c.text}
+                    {post.comments.map((c, i) => (
+                      <div key={c._id || i} className="text-sm text-gray-700 mb-1">
+                        <span className="font-semibold">{c.user?.name}: </span>{c.text}
                       </div>
                     ))}
                     <div className="flex gap-2 mt-2">
