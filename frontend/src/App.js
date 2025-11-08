@@ -18,6 +18,10 @@ function App() {
     password: ''
   });
 
+  // Comments
+  const [openCommentBox, setOpenCommentBox] = useState(null);
+  const [commentInputs, setCommentInputs] = useState({});
+
   // Check if user is logged in on mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
@@ -34,10 +38,9 @@ function App() {
       setLoading(true);
       const response = await fetch(`${API_URL}/posts`, {
         headers: {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${user?.token}`
-}
-
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        }
       });
       const data = await response.json();
       if (response.ok) {
@@ -190,6 +193,36 @@ function App() {
       }
     } catch (err) {
       console.error('Error deleting post:', err);
+    }
+  };
+
+  // Comment handlers
+  const handleCommentChange = (postId, value) => {
+    setCommentInputs(prev => ({ ...prev, [postId]: value }));
+  };
+
+  const handleAddComment = async (postId) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+
+    try {
+      const response = await fetch(`${API_URL}/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPosts(posts.map(post =>
+          post._id === postId ? { ...post, comments: data.comments } : post
+        ));
+        setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+      }
+    } catch (err) {
+      console.error('Error adding comment:', err);
     }
   };
 
@@ -406,11 +439,42 @@ function App() {
                     </span>
                   </button>
                   
-                  <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                  <button
+                    onClick={() => setOpenCommentBox(openCommentBox === post._id ? null : post._id)}
+                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition"
+                  >
                     <MessageCircle className="w-4 h-4" />
                     <span className="text-sm font-semibold">Comment</span>
                   </button>
                 </div>
+
+                {/* Comment Section */}
+                {openCommentBox === post._id && (
+                  <div className="mt-3">
+                    {post.comments?.map((c) => (
+                      <div key={c._id || c.createdAt} className="text-sm text-gray-700 mb-1">
+                        <span className="font-semibold">{c.user?.name}: </span>
+                        {c.text}
+                      </div>
+                    ))}
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Write a comment..."
+                        value={commentInputs[post._id] || ''}
+                        onChange={(e) => handleCommentChange(post._id, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post._id)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
             ))
           )}

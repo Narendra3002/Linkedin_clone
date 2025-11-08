@@ -15,7 +15,6 @@ app.use(cors({
   credentials: true
 }));
 
-
 app.use(express.json());
 
 // MongoDB Connection
@@ -207,6 +206,7 @@ app.get('/api/posts', authMiddleware, async (req, res) => {
   try {
     const posts = await Post.find()
       .populate('author', 'name email')
+      .populate('comments.user', 'name')
       .sort({ createdAt: -1 });
 
     res.json({ posts });
@@ -302,6 +302,38 @@ app.put('/api/posts/:id', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Update post error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 8. Add Comment to Post
+app.post('/api/posts/:id/comment', authMiddleware, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment cannot be empty' });
+    }
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = {
+      user: req.user._id,
+      text: text.trim(),
+      createdAt: new Date()
+    };
+
+    post.comments.push(comment);
+    await post.save();
+
+    // Populate user for response
+    await post.populate('comments.user', 'name');
+
+    res.status(201).json({ message: 'Comment added', comments: post.comments });
+  } catch (error) {
+    console.error('Add comment error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
