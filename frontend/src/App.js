@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, LogOut, User, ThumbsUp, MessageCircle, Edit2, Trash2, Upload } from 'lucide-react';
+import { Home, LogOut, User, ThumbsUp, MessageCircle, Trash2 } from 'lucide-react';
 
 const API_URL = 'https://linkedin-clone-uh4b.onrender.com/api';
 
@@ -11,38 +11,34 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auth form states
-  const [authForm, setAuthForm] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
 
-  // Check if user is logged in on mount
+  // For comments
+  const [openCommentBox, setOpenCommentBox] = useState(null);
+  const [commentInputs, setCommentInputs] = useState({});
+
+  // Load user on mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (storedUser) {
       setUser(storedUser);
       setCurrentPage('feed');
-      fetchPosts();
+      fetchPosts(storedUser);
     }
   }, []);
 
-  // Fetch all posts
-  const fetchPosts = async () => {
+  // Fetch posts
+  const fetchPosts = async (currentUser = user) => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/posts`, {
         headers: {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${user?.token}`
-}
-
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser?.token}`,
+        },
       });
       const data = await response.json();
-      if (response.ok) {
-        setPosts(data.posts || []);
-      }
+      if (response.ok) setPosts(data.posts || []);
     } catch (err) {
       console.error('Error fetching posts:', err);
     } finally {
@@ -50,69 +46,59 @@ function App() {
     }
   };
 
-  // Handle signup
+  // Signup
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authForm)
+        body: JSON.stringify(authForm),
       });
-
       const data = await response.json();
-      
       if (response.ok) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         setCurrentPage('feed');
-        fetchPosts();
+        fetchPosts(data.user);
         setAuthForm({ name: '', email: '', password: '' });
-      } else {
-        setError(data.message || 'Signup failed');
-      }
-    } catch (err) {
+      } else setError(data.message || 'Signup failed');
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle login
+  // Login
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: authForm.email, password: authForm.password })
+        body: JSON.stringify({ email: authForm.email, password: authForm.password }),
       });
-
       const data = await response.json();
-      
       if (response.ok) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         setCurrentPage('feed');
-        fetchPosts();
+        fetchPosts(data.user);
         setAuthForm({ name: '', email: '', password: '' });
-      } else {
-        setError(data.message || 'Login failed');
-      }
-    } catch (err) {
+      } else setError(data.message || 'Login failed');
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle logout
+  // Logout
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -120,51 +106,42 @@ function App() {
     setPosts([]);
   };
 
-  // Create new post
+  // Create Post
   const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!newPost.trim()) return;
-
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ content: newPost })
+        body: JSON.stringify({ content: newPost }),
       });
-
       const data = await response.json();
-      
       if (response.ok) {
         setPosts([data.post, ...posts]);
         setNewPost('');
-      } else {
-        setError(data.message || 'Failed to create post');
-      }
-    } catch (err) {
+      } else setError(data.message || 'Failed to create post');
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Like post
+  // Like Post
   const handleLike = async (postId) => {
     try {
       const response = await fetch(`${API_URL}/posts/${postId}/like`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
+        headers: { 'Authorization': `Bearer ${user.token}` },
       });
-
       const data = await response.json();
-      
       if (response.ok) {
-        setPosts(posts.map(post => 
+        setPosts(posts.map(post =>
           post._id === postId ? { ...post, likes: data.likes, likedBy: data.likedBy } : post
         ));
       }
@@ -173,30 +150,54 @@ function App() {
     }
   };
 
-  // Delete post
+  // Delete Post
   const handleDelete = async (postId) => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
-
     try {
       const response = await fetch(`${API_URL}/posts/${postId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
+        headers: { 'Authorization': `Bearer ${user.token}` },
       });
-
-      if (response.ok) {
-        setPosts(posts.filter(post => post._id !== postId));
-      }
+      if (response.ok) setPosts(posts.filter(post => post._id !== postId));
     } catch (err) {
       console.error('Error deleting post:', err);
     }
   };
 
-  // Format time ago
+  // Handle Comment Input Change
+  const handleCommentChange = (postId, value) => {
+    setCommentInputs(prev => ({ ...prev, [postId]: value }));
+  };
+
+  // Add Comment
+  const handleAddComment = async (postId) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+
+    try {
+      const response = await fetch(`${API_URL}/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPosts(posts.map(post =>
+          post._id === postId ? { ...post, comments: data.comments } : post
+        ));
+        setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+      }
+    } catch (err) {
+      console.error('Error adding comment:', err);
+    }
+  };
+
+  // Time ago format
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -204,7 +205,7 @@ function App() {
     return new Date(date).toLocaleDateString();
   };
 
-  // Render Login/Signup Page
+  // Auth Page
   const renderAuth = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
@@ -219,21 +220,13 @@ function App() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setCurrentPage('login')}
-            className={`flex-1 py-2 rounded-lg font-semibold transition ${
-              currentPage === 'login'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`flex-1 py-2 rounded-lg font-semibold transition ${currentPage === 'login' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
             Login
           </button>
           <button
             onClick={() => setCurrentPage('signup')}
-            className={`flex-1 py-2 rounded-lg font-semibold transition ${
-              currentPage === 'signup'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`flex-1 py-2 rounded-lg font-semibold transition ${currentPage === 'signup' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
             Sign Up
           </button>
@@ -297,7 +290,7 @@ function App() {
     </div>
   );
 
-  // Render Feed Page
+  // Feed Page
   const renderFeed = () => (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -309,13 +302,11 @@ function App() {
             </div>
             <h1 className="text-xl font-bold text-gray-800">LinkedIn Clone</h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {user?.name?.charAt(0).toUpperCase()}
-                </span>
+                <span className="text-white font-semibold text-sm">{user?.name?.charAt(0).toUpperCase()}</span>
               </div>
               <span className="font-semibold text-gray-700 hidden sm:inline">{user?.name}</span>
             </div>
@@ -339,7 +330,7 @@ function App() {
               onChange={(e) => setNewPost(e.target.value)}
               placeholder="What's on your mind?"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows="3"
+              rows={3}
             />
             <div className="flex justify-end mt-3">
               <button
@@ -369,21 +360,16 @@ function App() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">
-                        {post.author?.name?.charAt(0).toUpperCase()}
-                      </span>
+                      <span className="text-white font-semibold">{post.author?.name?.charAt(0).toUpperCase()}</span>
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">{post.author?.name}</h3>
                       <p className="text-sm text-gray-500">{timeAgo(post.createdAt)}</p>
                     </div>
                   </div>
-                  
+
                   {user?._id === post.author?._id && (
-                    <button
-                      onClick={() => handleDelete(post._id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                    >
+                    <button onClick={() => handleDelete(post._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
@@ -391,26 +377,53 @@ function App() {
 
                 <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
 
+                {/* Like & Comment Buttons */}
                 <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
                   <button
                     onClick={() => handleLike(post._id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      post.likedBy?.includes(user?._id)
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50'
+                      post.likedBy?.includes(user?._id) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     <ThumbsUp className="w-4 h-4" />
-                    <span className="text-sm font-semibold">
-                      {post.likes || 0} {post.likes === 1 ? 'Like' : 'Likes'}
-                    </span>
+                    <span className="text-sm font-semibold">{post.likes || 0} {post.likes === 1 ? 'Like' : 'Likes'}</span>
                   </button>
-                  
-                  <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+
+                  <button
+                    onClick={() => setOpenCommentBox(openCommentBox === post._id ? null : post._id)}
+                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition"
+                  >
                     <MessageCircle className="w-4 h-4" />
                     <span className="text-sm font-semibold">Comment</span>
                   </button>
                 </div>
+
+                {/* Comment Box */}
+                {openCommentBox === post._id && (
+                  <div className="mt-3">
+                    {post.comments.map((c) => (
+                      <div key={c._id || c.createdAt} className="text-sm text-gray-700 mb-1">
+                        <span className="font-semibold">{c.user?.name}: </span>
+                        {c.text}
+                      </div>
+                    ))}
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Write a comment..."
+                        value={commentInputs[post._id] || ''}
+                        onChange={(e) => handleCommentChange(post._id, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post._id)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}
